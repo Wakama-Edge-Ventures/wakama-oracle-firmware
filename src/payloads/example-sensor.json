@@ -1,0 +1,15 @@
+{
+  "type": "wakama.sensor.record",
+  "version": 1,
+  "source": "esp32",
+  "zone": "Bouake",
+  "field": "KouassiKongokro",
+  "coop": "Etra",
+  "readings": {
+    "tempC": 29.1,
+    "humidity": 64.5,
+    "soilMoisture": 42.7,
+    "co2ppm": 512
+  },
+  "ts_ms": 123456789
+}
