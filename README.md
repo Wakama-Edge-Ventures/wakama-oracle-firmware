@@ -1,31 +1,44 @@
 # wakama-oracle-firmware
-Firmware ESP32/ESP32-CAM pour Wakama Oracle.
 
+Firmware ESP32/ESP32-CAM pour **Wakama Oracle**.
 
-# Wakama Oracle Firmware
+---
 
-Minimal ESP32 firmware used to demonstrate the "device → JSON → publisher → dashboard" flow for **Wakama.farm**.
+## 1. Description
+
+Minimal ESP32 firmware used to demonstrate the **“device → JSON → publisher → dashboard”** flow for **Wakama.farm**.
 
 This repo does **not** try to be production-ready. It only proves that:
-1. An ESP32 can produce Wakama-shaped JSON (close to `wakama.sensor.record`).
-2. The JSON contains the same site metadata used in the dashboard (Bouaké / KouassiKongokro / Etra).
-3. It can later be POSTed to an ingest endpoint (n8n, Express, etc.).
-4. The code is small enough to be flashed from Arduino IDE.
 
-## Files
+1. An ESP32 can produce **Wakama-shaped JSON** (close to `wakama.sensor.record`).
+2. The JSON contains the **same site metadata** used in the dashboard (**Bouake / KouassiKongokro / Etra**).
+3. It can later be **POSTed to an ingest endpoint** (n8n, Express, Wakama ingest).
+4. The code is **small enough** to be flashed from Arduino IDE or PlatformIO.
 
-- `src/main.ino` → main demo sketch (prints JSON every 10s)
-- `src/config.h` → WiFi + device identity (edit this)
-- `src/lib/wakama_payload.h` → tiny helper to build JSON
-- `src/payloads/example-sensor.json` → reference payload (matches dashboard)
-- `docs/wiring.md` → notes for DHT22 / DS18B20
-- `platformio.ini` → optional PlatformIO setup for ESP32
+This repo is just to show Solana Foundation / Amira that the **device side exists** and speaks the **same JSON** as the publisher.
 
-## JSON shape
+---
 
+## 2. Repo structure
+
+```text
+wakama-oracle-firmware/
+├── README.md
+├── platformio.ini
+├── src/
+│   ├── main.ino
+│   └── config.h
+├── src/lib/
+│   └── wakama_payload.h
+├── src/payloads/
+│   └── example-sensor.json
+└── docs/
+    └── wiring.md
+3. JSON shape (target)
 The firmware emits JSON like:
 
-```json
+json
+Copier le code
 {
   "type": "wakama.sensor.record",
   "version": 1,
@@ -45,14 +58,10 @@ The firmware emits JSON like:
 }
 This is intentionally similar to the JSON we push to IPFS and to the dashboard.
 
-arduino
+4. Files
+4.1 src/config.h
+cpp
 Copier le code
-
----
-
-### 2) `src/config.h`
-
-```cpp
 #pragma once
 
 // put your local WiFi creds here
@@ -65,7 +74,7 @@ Copier le code
 // later we can POST to this URL
 // e.g. http://192.168.1.50:5678/ingest or your n8n webhook
 #define WAKAMA_INGEST_URL ""
-3) src/lib/wakama_payload.h
+4.2 src/lib/wakama_payload.h
 cpp
 Copier le code
 #pragma once
@@ -101,7 +110,7 @@ static String wakamaBuildPayload(
   j += "}";
   return j;
 }
-4) src/payloads/example-sensor.json
+4.3 src/payloads/example-sensor.json
 json
 Copier le code
 {
@@ -121,9 +130,9 @@ Copier le code
   },
   "ts_ms": 1730371200000
 }
-Ça sert juste à montrer sur GitHub : “voilà le format qu’on envoie”.
+This is only to show on GitHub: “this is the format we send”.
 
-5) src/main.ino (version améliorée qui utilise config.h + wakama_payload.h)
+4.4 src/main.ino (improved version)
 cpp
 Copier le code
 #include <WiFi.h>
@@ -181,16 +190,19 @@ void loop() {
   String payload = wakamaBuildPayload(ZONE, FIELD, COOP, t, h, sm, co2, ts);
   Serial.println(payload);
 
-  // later: if (WiFi.status() == WL_CONNECTED && strlen(WAKAMA_INGEST_URL) > 0) { ... }
+  // later:
+  // if (WiFi.status() == WL_CONNECTED && strlen(WAKAMA_INGEST_URL) > 0) {
+  //   // HTTP POST here
+  // }
 
   delay(10 * 1000);
 }
-6) docs/wiring.md
-md
+4.5 docs/wiring.md
+markdown
 Copier le code
 # Wiring notes (demo)
 
-For the 2-week milestone we do NOT require real sensors, but the target MCU is an ESP32 DevKit (common board).
+For the 2-week milestone we do **NOT** require real sensors, but the target MCU is an ESP32 DevKit (common board).
 
 If you want to plug real sensors:
 
@@ -198,11 +210,12 @@ If you want to plug real sensors:
 - **DS18B20** → 3.3V, GND, DATA on GPIO 5, 4.7k pull-up
 - **Soil sensor (analog)** → 3.3V, GND, A0 (ADC1_CH0)
 
-In code we currently generate fake values. Replacing them is straightforward:
+In code we currently **generate fake values**. Replacing them is straightforward:
+
 1. read from DHT22
 2. pass real values to `wakamaBuildPayload(...)`
 3. print / POST
-7) (optionnel) platformio.ini
+4.6 platformio.ini (optional but clean)
 ini
 Copier le code
 [env:esp32dev]
@@ -211,3 +224,18 @@ board = esp32dev
 framework = arduino
 monitor_speed = 115200
 src_dir = src
+lib_deps =
+  bblanchon/ArduinoJson @ ^6.21.3
+5. How it connects to the rest
+This firmware produces the JSON.
+
+The JSON is the same as the one you put in wakama-rwa-templates/templates/*.json.
+
+Then the publisher (wakama-oracle-publisher) uploads it to Pinata (IPFS) and emits a Solana Devnet memo.
+
+Then the dashboard (wakama-dashboard) shows it in /now-playing.
+
+So pour le milestone 2 semaines, ça prouve le flux complet device → JSON → IPFS → Devnet → dashboard.
+
+6. License
+MIT – Wakama Edge Ventures
